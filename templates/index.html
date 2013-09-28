@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+        <title>gevent + socket.io + werkzeug</title>
+        <script src="static/socket.io.js"></script>
+        <script>
+            window.onload = function() {
+                console.log("window.onload()");
+                var socket = io.connect("/api");
+                if (!socket)
+                    alert("io.connect() failed to initialize.")
+                socket.on("connect", function() {
+                    console.log("socket.on('connect')");
+                    socket.emit("foo", {"data": "client data"});
+                });
+                socket.on("bar", function(data) {
+                    console.log("socket.on('bar')");
+                    console.log(data);
+                    alert("Received from server: " + JSON.stringify(data));
+                });
+            };
+        </script>
+    </head>
+    <body>
+    </body>
+</html>
