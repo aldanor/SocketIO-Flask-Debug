@@ -1,20 +1,39 @@
 SocketIO-Flask-Debug
 ====================
 
-This is a minimal app to show how Flask debugging fails with Gevent-Socket.io.
+Holy cow, I have finally made the Werkzeug debugger work with gevent-socketio, see below for usage.
+```python
+# Server-side usage
 
-What it does:
-- when a socket is connected, the client sends "foo" to the server
-- the server receives "foo" and sends "bar" back
-- the client receives "bar" and pops up an alert
+from socketio.server import SocketIOServer
+from socketio.namespace import BaseNamespace
+from debugger import SocketIODebugger
 
-To start a server:
-- with debug disabled: `python app.py`
-- with debug enabled: `python app.py debug`
+class MyNamespace(BaseNamespace):
+  def on_my_message(self, data):
+    do_something()
 
-In either case, point the browser at http://127.0.0.1:8080 and see if you can get an alert when running the
-server in debug mode.
+app.debug=True
+app = SocketIODebugger(app, evalex=True, namespace=MyNamespace)
 
-To see if Werkzeug debugging works, browse to http://127.0.0.1:8080/debug.
+SocketIOServer((host, port), app, resource='socket.io', policy_server=False).serve_forever()
+```
+```javascript
+// Client-side usage
+
+socket.on("exception", function () {
+  window.location.reload(true);
+});
+```
+To test it, run `python app.py`, then browse to http://127.0.0.1:8080 and click on the buttons.
+
+How it works:
+- extract the values from the generator returned by `werkzeug.debug.DebuggedApplication` whenever a 
+  socket.io request is spotted, this enables to establish the socket connection properly;
+- if a namespace is specified, wrap the namespace handlers in debugger's try/catch blocks;
+- if an exception is caught within the namespace, save the full original traceback and emit an
+  "exception" socket message;
+- inject exception reraising into `app.before_request()` which allows forwarding any incoming requests 
+  to the debugger if an exception was caught within the namespace.
 
 Python dependencies: `flask`, `werkzeug`, `gevent`, `gevent-socketio`.
