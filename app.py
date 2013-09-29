@@ -1,4 +1,3 @@
-import sys
 from gevent import monkey
 from socketio.server import SocketIOServer
 from socketio import socketio_manage
@@ -53,10 +52,9 @@ if __name__ == '__main__':
     app.route('/')(index)
     app.route('/debug')(debug)
     app.route('/socket.io/<path:path>')(run_socketio)
+    app.debug = True
 
-    if len(sys.argv) > 1 and sys.argv[1] == 'debug':
-        app.debug = True
-        app = SocketIODebugger(app, evalex=True, namespace=Namespace)
+    app = SocketIODebugger(app, evalex=True, namespace=Namespace)
 
     server = SocketIOServer(('', 8080), app,
         resource='socket.io', policy_server=False)
