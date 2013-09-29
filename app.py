@@ -2,8 +2,10 @@ from gevent import monkey
 from socketio.server import SocketIOServer
 from socketio import socketio_manage
 from flask import Flask, request, render_template, Response
-from debugger import SocketIODebugger
+from werkzeug.serving import run_with_reloader
 from socketio.namespace import BaseNamespace
+
+from debugger import SocketIODebugger
 
 monkey.patch_all()
 
@@ -59,4 +61,4 @@ if __name__ == '__main__':
     server = SocketIOServer(('', 8080), app,
         resource='socket.io', policy_server=False)
     print '\nserver.serve_forever()'
-    server.serve_forever()
+    run_with_reloader(server.serve_forever)()
