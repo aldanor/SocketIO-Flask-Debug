@@ -2,11 +2,12 @@ import sys
 from gevent import monkey
 from socketio.server import SocketIOServer
 from socketio import socketio_manage
-from flask import Flask, request, render_template
-from werkzeug.debug import DebuggedApplication
+from flask import Flask, request, render_template, Response
+from debugger import SocketIODebugger
 from socketio.namespace import BaseNamespace
 
 monkey.patch_all()
+
 
 class Namespace(BaseNamespace):
 
@@ -22,21 +23,30 @@ class Namespace(BaseNamespace):
         print '\nNamespace.recv_disconnect()'
         self.disconnect()
 
-    def on_foo(self, msg):
+    def on_foo(self, msg=None):
         print '\nNamespace.on_foo(): msg=%s' % repr(msg)
         self.emit('bar', {'data': 'some server data'})
+
+    def on_debug(self, msg=None):
+        print '\nNamespace.on_debug()'
+        raise Exception('in-namespace exception')
+
 
 def index():
     print '\nindex()'
     return render_template('index.html')
 
+
 def debug():
     print '\ndebug()'
-    0/1
+    raise Exception('in-flask exception')
+
 
 def run_socketio(path):
     print '\nrun_socketio(path=%s)' % repr(path)
     socketio_manage(request.environ, {'/api': Namespace}, request)
+    return Response()
+
 
 if __name__ == '__main__':
     app = Flask(__name__)
@@ -46,9 +56,9 @@ if __name__ == '__main__':
 
     if len(sys.argv) > 1 and sys.argv[1] == 'debug':
         app.debug = True
-        app = DebuggedApplication(app, evalex=True)
+        app = SocketIODebugger(app, evalex=True, namespace=Namespace)
 
-    server = SocketIOServer(('127.0.0.1', 8080), app,
+    server = SocketIOServer(('', 8080), app,
         resource='socket.io', policy_server=False)
     print '\nserver.serve_forever()'
     server.serve_forever()

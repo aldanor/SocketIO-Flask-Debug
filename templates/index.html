@@ -9,19 +9,41 @@
                 console.log("window.onload()");
                 var socket = io.connect("/api");
                 if (!socket)
-                    alert("io.connect() failed to initialize.")
+                    alert("io.connect() failed to initialize.");
+
                 socket.on("connect", function() {
                     console.log("socket.on('connect')");
-                    socket.emit("foo", {"data": "client data"});
                 });
+
                 socket.on("bar", function(data) {
                     console.log("socket.on('bar')");
-                    console.log(data);
-                    alert("Received from server: " + JSON.stringify(data));
+                    alert("Received from server: " + JSON.stringify(data) +
+                        "\n\n(if you see this, sockets work both ways)");
+                });
+
+                window.namespaceDebug = function() {
+                    socket.emit("debug");
+                };
+
+                window.flaskDebug = function() {
+                    window.location.href = "debug";
+                };
+
+                window.testConnection = function() {
+                    socket.emit("foo", {"data": "client data"});
+                };
+
+                // This is the important part: send a GET request (any will do)
+                // if an exception occured so it can be rerouted by Werkzeug
+                socket.on("exception", function () {
+                    window.location.reload(true);
                 });
             };
         </script>
     </head>
     <body>
+        <button onclick="testConnection()">Test socket.io connection</button>
+        <button onclick="namespaceDebug()">Raise a Namespace exception</button>
+        <button onclick="flaskDebug()">Raise a Flask exception</button>
     </body>
 </html>
